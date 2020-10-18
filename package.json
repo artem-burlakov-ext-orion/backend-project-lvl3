@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "![Actions Status](/workflows/hexlet-check/badge.svg)",
   "main": "index.js",
+  "bin": {
+    "page-loader": "src/bin/page-loader.js"
+  },
   "engines": {
     "node": ">=14"
   },
@@ -29,6 +32,12 @@
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-jest": "^24.1.0",
-    "jest": "^26.5.3"
+    "jest": "^26.5.3",
+    "nock": "^13.0.4"
+  },
+  "dependencies": {
+    "axios": "^0.20.0",
+    "cheerio": "^1.0.0-rc.3",
+    "commander": "^6.1.0"
   }
 }

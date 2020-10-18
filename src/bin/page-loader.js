@@ -2,13 +2,12 @@
 
 import program from 'commander';
 import pageLoader from '../index';
-import getVersion from '../utils/utils';
+import getVersion from '../util';
 
 program
   .version(getVersion())
-  .description('')
+  .description('download page from internet')
   .option('-o, --output [path]', 'output dir path', `${process.cwd()}`)
   .arguments('<url>')
   .action((url) => pageLoader(url, program.output))
-  .parse(process.argv)
-  
+  .parse(process.argv);  
