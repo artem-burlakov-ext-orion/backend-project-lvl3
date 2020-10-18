@@ -16,8 +16,7 @@ beforeEach(async () => {
 
 const scope = nock('https://ru.hexlet.io')
   .get('/courses')
-  .reply(200, 'ok' );
-  
+  .reply(200, 'ok');
 
 test('should return сorrect data', async () => {
   await pageLoader('https://ru.hexlet.io/courses', dirPath);
@@ -25,8 +24,6 @@ test('should return сorrect data', async () => {
   const filePath = join(dirPath, 'ru-hexlet-io-courses.html');
   await expect(fsp.readFile(filePath, 'utf8')).resolves.toBe(expected);
 });
-
-
 
 // test('should create file', async () => {
 //   await pageLoader('https://ru.hexlet.io/courses', dirPath);
