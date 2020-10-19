@@ -52,8 +52,6 @@ const saveImages = (imagesData) => {
   Promise.all(promises);
 };
 
-
-
 const downloadFile = (fileUrl, outputPath) => {
   const writer = fs.createWriteStream(outputPath);
   return axios({
