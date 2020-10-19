@@ -19,7 +19,9 @@ const getImageFilePath = (src) => {
   const arr = src.split('/');
   return arr[arr.length - 1];
 };
+const getImageLocalSrc = (url, src) => join(getImageDirPath(url), getImageFilePath(src));
 const getImageFullPath = (url, dir, src) => join(dir, getImageDirPath(url), getImageFilePath(src));
+
 const getHtmlFilePath = (url) => `${getBasePath(url)}.html`;
 const getHtmlFullPath = (url, dir) => join(dir, getHtmlFilePath(url));
 const getToDoDir = (url, dir) => join(dir, `${getImageDirPath(url)}`);
@@ -29,12 +31,13 @@ const getParsedData = (url, dir, html) => {
   const images = [];
   const imageLinks = $('img[src]');
   imageLinks.attr('src', (i, src) => {
-    const fullPath = `${getImageFullPath(url, dir, src)}`;
+    const localSrc = getImageLocalSrc(url, src);
+    const fullPath = getImageFullPath(url, dir, src);
     images.push({
       src,
       fullPath,
     });
-    return src.replace(/.*/, fullPath);
+    return src.replace(/.*/, localSrc);
   });
   return {
     images,
@@ -46,6 +49,7 @@ const getParsedData = (url, dir, html) => {
 };
 
 const saveHtml = (path, data) => fsp.writeFile(path, data);
+
 const saveImages = (imagesData) => {
   const promises = imagesData
     .map(({ src, fullPath }) => downloadFile(src, fullPath));
