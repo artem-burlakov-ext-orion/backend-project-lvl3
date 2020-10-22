@@ -66,7 +66,7 @@ const getParsedData = (url, dir, html) => {
   resourceLinks.attr('href', (i, href) => {
     const data = new URL(href, url);
     if (!isLocalResource(data, myUrlData.origin)) {
-      return;
+      return href;
     }
     const localHref = getLocalFileFullPath(data.href);
     const source = data.href;
@@ -93,6 +93,7 @@ const getParsedData = (url, dir, html) => {
       content: $.html(),
       target: getHtmlFullPath(url, dir),
     },
+    before: html,
   };
 };
 
