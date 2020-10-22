@@ -29,8 +29,8 @@ const getHtmlFilePath = (url) => `${getConvertedPathByUrl(url)}.html`;
 const getHtmlFullPath = (url, dir) => join(dir, getHtmlFilePath(url));
 const getToDoDir = (url, dir) => join(dir, `${getBaseDirPath(url)}`);
 
-//const getCssLocalHref = (url, href) => join(getBaseDirPath(url), getConvertedPathByUrl(join(url, href)));
-const getCssFullPath = (dir, href) => join(dir, href);
+
+const getResourceFullPath = (dir, href) => join(dir, href);
 
 const mainUrl = 'https://ru.hexlet.io/courses';
 
@@ -54,28 +54,41 @@ const getLocalFileName = (href) => {
   }).join('-');
 };
 
-const getLocalFileFullPath = (href) => join(getLocalDirName(mainUrl, SUFFIX), getLocalFileName(href));
+const getResourceRelativePath = (href) => join(getLocalDirName(mainUrl, SUFFIX), getLocalFileName(href));
 
 const isLocalResource = (data, origin) => data.origin === origin || !data.href.includes('//');
 
 const getParsedData = (url, dir, html) => {
-  const myUrlData = new URL(url);
+  const urlData = new URL(url);
   const $ = cheerio.load(html);
   const resources = [];
-  const resourceLinks = $('link[href]');
-  resourceLinks.attr('href', (i, href) => {
+  const resourceHrefs = $('link[href]');
+  resourceHrefs.attr('href', (i, href) => {
     const data = new URL(href, url);
-    if (!isLocalResource(data, myUrlData.origin)) {
+    if (!isLocalResource(data, urlData.origin)) {
       return href;
     }
-    const localHref = getLocalFileFullPath(data.href);
+    const localHref = getResourceRelativePath(data.href);
     const source = data.href;
-    const target = getCssFullPath(dir, localHref);
+    const target = getResourceFullPath(dir, localHref);
     resources.push({
       source,
       target,
     });
     return href.replace(/.*/, localHref);
+  });
+  const resourceSrcs = $('script[src]');
+  resourceSrcs.attr('src', (i, src) => {
+    const data = new URL(src, url);
+    if (!isLocalResource(data, urlData.origin)) {
+      return src;
+    }
+    const localSrc = getResourceRelativePath(data.href);
+    resources.push({
+      source: data.href,
+      target: getResourceFullPath(dir, localSrc),
+    });
+    return src.replace(/.*/, localSrc);
   });
   const imageLinks = $('img[src]');
   imageLinks.attr('src', (i, src) => {
@@ -93,7 +106,6 @@ const getParsedData = (url, dir, html) => {
       content: $.html(),
       target: getHtmlFullPath(url, dir),
     },
-    before: html,
   };
 };
 
@@ -133,17 +145,13 @@ const saveData = (data) => {
   saveResources(data.resources);
 };
 
-const getData = (url, dir) => new Promise((resolve, reject) => {
-  axios.get(url)
-    .then((res) => {
-      const data = getParsedData(url, dir, res.data);
-      resolve(data);
-    });
-});
+const getData = (url, dir) => new Promise((resolve, reject) => axios.get(url)
+  .then((res) => resolve(getParsedData(url, dir, res.data)))
+);
 
 const makeDir = (url, dir) => fsp.mkdir(getToDoDir(url, dir), { recursive: true });
 
 export default (url, dir = process.cwd()) => makeDir(url, dir)
-  .then(() => getData(url, dir)
-  .then((data) => saveData(data))
-  );
+  .then(() => getData(url, dir))
+  .then((data) => saveData(data));
+ 
