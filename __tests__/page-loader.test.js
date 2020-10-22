@@ -12,6 +12,7 @@ const { promises: fsp } = fs;
 const getPath = (fileName) => join(dirname(fileURLToPath(import.meta.url)), '..', '__fixtures__', fileName);
 
 let dirPath;
+let expectedResources;
 let beforeParsing;
 let afterParsing;
 
@@ -28,6 +29,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   dirPath = await fsp.mkdtemp(join(os.tmpdir(), 'page-loader-'));
+  expectedResources = await fsp.readdir(join(dirname(fileURLToPath(import.meta.url)), '..', '__fixtures__', 'ru-hexlet-io-courses_files'));
 });
 
 describe('get response with mock and parse to correct data', () => {
@@ -40,6 +42,10 @@ describe('get response with mock and parse to correct data', () => {
     await pageLoader('https://ru.hexlet.io/courses', dirPath);
     const filePath = join(dirPath, 'ru-hexlet-io-courses.html');
     await expect(fsp.readFile(filePath, 'utf8')).resolves.toBe(afterParsing);
+  });
+  it('should download all resources', async () => {
+    await pageLoader('https://ru.hexlet.io/courses', dirPath);
+    await expect(fs.readdir(join(dirPath, 'ru-hexlet-io-courses_files')).resolves.toBe(expectedResources));
   });
 });
 

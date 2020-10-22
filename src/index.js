@@ -5,62 +5,109 @@ import { dirname, join } from 'path';
 
 const { promises: fsp } = fs;
 
+const SUFFIX = '_files';
+
 const isAlphaNumeric = (sym) => sym.toUpperCase() !== sym || Number.isInteger(sym);
 
 const convertData = (sym) => (isAlphaNumeric(sym) ? sym : '-');
 
-const getBasePath = (fullUrl) => {
+const getConvertedPathByUrl = (fullUrl) => {
+  // console.log('FULLURL: ', fullUrl);
   const url = fullUrl.split('//')[1].split('');
   return url.reduce((acc, elem) => `${acc}${convertData(elem)}`, '');
 };
 
-const getImageDirPath = (url) => `${getBasePath(url)}_files`;
+const getBaseDirPath = (url) => `${getConvertedPathByUrl(url)}_files`;
 const getImageFilePath = (src) => {
   const arr = src.split('/');
   return arr[arr.length - 1];
 };
-const getImageLocalSrc = (url, src) => join(getImageDirPath(url), getImageFilePath(src));
-const getImageFullPath = (url, dir, src) => join(dir, getImageDirPath(url), getImageFilePath(src));
+const getImageLocalSrc = (url, src) => join(getBaseDirPath(url), getImageFilePath(src));
+const getImageFullPath = (url, dir, src) => join(dir, getBaseDirPath(url), getImageFilePath(src));
 
-const getHtmlFilePath = (url) => `${getBasePath(url)}.html`;
+const getHtmlFilePath = (url) => `${getConvertedPathByUrl(url)}.html`;
 const getHtmlFullPath = (url, dir) => join(dir, getHtmlFilePath(url));
-const getToDoDir = (url, dir) => join(dir, `${getImageDirPath(url)}`);
+const getToDoDir = (url, dir) => join(dir, `${getBaseDirPath(url)}`);
+
+//const getCssLocalHref = (url, href) => join(getBaseDirPath(url), getConvertedPathByUrl(join(url, href)));
+const getCssFullPath = (dir, href) => join(dir, href);
+
+const mainUrl = 'https://ru.hexlet.io/courses';
+
+const getConverted = (str) => str.replace(/\W/g, '-');
+
+const getLocalDirName = (host, suffix) => {
+  const preparedHost = host.split('//')[1];
+  return `${getConverted(preparedHost)}${suffix}`;
+}
+
+const isLast = (index, length) => index === length - 1;
+const getLastHref = (href) => href.includes('.') ? href : `${href}.html`;
+
+const getLocalFileName = (href) => {
+  const preparedHref = href.split('//')[1].split('/');
+  return preparedHref.map((href, i) => {
+    if (isLast(i, preparedHref.length)) {
+      return getLastHref(href);
+    }
+    return getConverted(href);
+  }).join('-');
+};
+
+const getLocalFileFullPath = (href) => join(getLocalDirName(mainUrl, SUFFIX), getLocalFileName(href));
+
+const isLocalResource = (data, origin) => data.origin === origin || !data.href.includes('//');
 
 const getParsedData = (url, dir, html) => {
+  const myUrlData = new URL(url);
   const $ = cheerio.load(html);
-  const images = [];
+  const resources = [];
+  const resourceLinks = $('link[href]');
+  resourceLinks.attr('href', (i, href) => {
+    const data = new URL(href, url);
+    if (!isLocalResource(data, myUrlData.origin)) {
+      return;
+    }
+    const localHref = getLocalFileFullPath(data.href);
+    const source = data.href;
+    const target = getCssFullPath(dir, localHref);
+    resources.push({
+      source,
+      target,
+    });
+    return href.replace(/.*/, localHref);
+  });
   const imageLinks = $('img[src]');
   imageLinks.attr('src', (i, src) => {
     const localSrc = getImageLocalSrc(url, src);
-    const fullPath = getImageFullPath(url, dir, src);
-    images.push({
-      src,
-      fullPath,
+    const target = getImageFullPath(url, dir, src);
+    resources.push({
+      source: src,
+      target,
     });
     return src.replace(/.*/, localSrc);
   });
   return {
-    images,
+    resources,
     html: {
       content: $.html(),
-      fullPath: getHtmlFullPath(url, dir),
+      target: getHtmlFullPath(url, dir),
     },
   };
 };
 
 const saveHtml = (path, data) => fsp.writeFile(path, data);
 
-const saveImages = (imagesData) => {
-  const promises = imagesData
-    .map(({ src, fullPath }) => downloadFile(src, fullPath));
+const saveResources = (data) => {
+  const promises = data.map(({ source, target }) => downloadFile(source, target));
   Promise.all(promises);
 };
 
-const downloadFile = (fileUrl, outputPath) => {
-  const writer = fs.createWriteStream(outputPath);
+const downloadFile = (source, target) => {
+  const writer = fs.createWriteStream(target);
   return axios({
     method: 'get',
-    url: fileUrl,
+    url: source,
     responseType: 'stream',
   }).then((response) =>
     new Promise((resolve, reject) => {
@@ -80,8 +127,9 @@ const downloadFile = (fileUrl, outputPath) => {
 };
 
 const saveData = (data) => {
-  saveHtml(data.html.fullPath, data.html.content);
-  saveImages(data.images);
+  const { target, content } = data.html;
+  saveHtml(target, content);
+  saveResources(data.resources);
 };
 
 const getData = (url, dir) => new Promise((resolve, reject) => {
