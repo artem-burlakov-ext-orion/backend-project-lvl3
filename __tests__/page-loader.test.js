@@ -31,10 +31,12 @@ beforeAll(async () => {
   beforeParsing = await fsp.readFile(join(getPath(resources), 'ru-hexlet-io-courses.html'), 'utf8');
   afterParsing = await fsp.readFile(getPath('ru-hexlet-io-courses.html'), 'utf8');
   rss = await fsp.readFile(getResourcePath('ru-hexlet-io-lessons.rss'), 'utf8');
-  const scope = nock(baseUrl)
+  nock(baseUrl)
     .persist()
-    .get('/courses').reply(200, beforeParsing)
-    .get('/lessons.rss').reply(200, rss);
+    .get('/courses')
+    .reply(200, beforeParsing)
+    .get('/lessons.rss')
+    .reply(200, rss);
 });
 
 beforeEach(async () => {
@@ -48,14 +50,13 @@ describe('get response with mock and parse to correct data', () => {
     const htmlPath = join(output, 'ru-hexlet-io-courses.html');
     await expect(isFileExist(htmlPath)).resolves.toBe(true);
   });
-  it('should return сorrect html content', async () => {    
+  it('should return сorrect html content', async () => {
     await pageLoader(fullUrl, output);
     const html = join(output, 'ru-hexlet-io-courses.html');
     await expect(fsp.readFile(html, 'utf8')).resolves.toBe(afterParsing);
   });
   it('should download all resources', async () => {
     await pageLoader(fullUrl, output);
-    const files = await fsp.readdir(join(output, resources));
     await expect(fsp.readdir(join(output, resources))).resolves.toEqual(expectedResources);
   });
 });

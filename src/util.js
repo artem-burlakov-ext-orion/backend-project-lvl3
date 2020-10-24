@@ -1,9 +1,7 @@
-import { promises as fsp } from 'fs';
+import { promises as fsp, createWriteStream } from 'fs';
 import cheerio from 'cheerio';
-import { dirname, join } from 'path';
+import { join } from 'path';
 import axios from 'axios';
-
-const getVersion = async () => await fsp.readFile('../package.json').version;
 
 const SUFFIX = '_files';
 
@@ -26,26 +24,25 @@ const getLocalDirName = (host) => {
   return `${getConverted(preparedHost)}${SUFFIX}`;
 };
 const isLast = (index, length) => index === length - 1;
-const getLastHref = (href) => href.includes('.') ? href : `${href}.html`;
+const getLastHref = (href) => (href.includes('.') ? href : `${href}.html`);
 // const getToDoDir = (url, dir) => join(dir, getLocalDirName(url));
 
 const getLocalFileName = (href) => {
   const preparedHref = href.split('//')[1].split('/');
-  return preparedHref.map((href, i) => {
+  return preparedHref.map((preHref, i) => {
     if (isLast(i, preparedHref.length)) {
-      return getLastHref(href);
+      return getLastHref(preHref);
     }
-    return getConverted(href);
+    return getConverted(preHref);
   }).join('-');
 };
-const getResourceFullPath = (dir, href) => join(dir, href);
-// const getResourceRelativePath = (href) => join(getLocalDirName(href, SUFFIX), getLocalFileName(href));
+
 const isLocalResource = (data, origin) => data.origin === origin || !data.href.includes('//');
 
-const tags = { 
+const tags = {
   link: 'href',
   script: 'src',
-  img: 'src'
+  img: 'src',
 };
 
 const makeDir = (dir) => fsp.mkdir(dir, { recursive: true });
@@ -55,9 +52,8 @@ const getData = (dom, url, output) => {
   const resourceFullDirPath = join(output, resourceDirPath);
   const htmlFullPath = getHtmlFullPath(url, output);
   const urlData = new URL(url);
-  const resources = Object.entries(tags)
-  .reduce((acc, [key, value]) => {
-    let current = [];
+  const resources = Object.entries(tags).reduce((acc, [key, value]) => {
+    const current = [];
     dom(`${key}[${value}]`).attr(value, (i, elem) => {
       const attrUrlData = new URL(elem, urlData.href);
       if (!isLocalResource(attrUrlData, urlData.origin)) {
@@ -83,26 +79,26 @@ const getData = (dom, url, output) => {
 };
 
 const parseByUrl = (url, output) => new Promise((resolve, reject) => axios.get(url)
-  .then((res) => {
-    const dom = cheerio.load(res.data);
-    const parsedData = getData(dom, url, output);
-    resolve(parsedData);
-  })
-);
- 
-// const getParsedData = (url, output) => new Promise((resolve, reject) => {
-  
-//   makeDir(resourceFullDirPath)
-//     .then(() => parseByUrl(url, output)
-//     .then((data) => resolve(data))
-//     )
-// });
+  .then((res) => resolve(getData(cheerio.load(res.data), url, output)))
+  .catch(() => reject()));
 
-const saveHtml = (path, data) => fsp.writeFile(path, data);
+const downloadFile = (source, target) => axios({ method: 'get', url: source, responseType: 'stream' })
+  .then(({ data }) => {
+    const stream = data.pipe(createWriteStream(target));
+    return new Promise((resolve, reject) => {
+      stream.on('finish', () => resolve());
+      stream.on('error', () => reject());
+    });
+  });
+
+const saveResources = (data) => data.map(({ source, target }) => downloadFile(source, target));
+
+const saveHtml = (html) => fsp.writeFile(html.target, html.content);
+
+const saveData = (data) => Promise.all([saveHtml(data.html), ...saveResources(data.resources)]);
 
 export {
   parseByUrl,
-  saveHtml,
   makeDir,
-  getVersion,
+  saveData,
 };
