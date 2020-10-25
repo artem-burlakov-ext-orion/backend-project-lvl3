@@ -10,7 +10,6 @@ const isAlphaNumeric = (sym) => sym.toUpperCase() !== sym || Number.isInteger(sy
 const convertData = (sym) => (isAlphaNumeric(sym) ? sym : '-');
 
 const getConvertedPathByUrl = (fullUrl) => {
-  // console.log('FULLURL: ', fullUrl);
   const url = fullUrl.split('//')[1].split('');
   return url.reduce((acc, elem) => `${acc}${convertData(elem)}`, '');
 };
@@ -25,7 +24,6 @@ const getLocalDirName = (host) => {
 };
 const isLast = (index, length) => index === length - 1;
 const getLastHref = (href) => (href.includes('.') ? href : `${href}.html`);
-// const getToDoDir = (url, dir) => join(dir, getLocalDirName(url));
 
 const getLocalFileName = (href) => {
   const preparedHref = href.split('//')[1].split('/');
@@ -74,7 +72,7 @@ const getData = (dom, url, output) => {
       content: dom.html(),
       target: htmlFullPath,
     },
-    toDoDir: resourceFullDirPath,
+    resourcesDir: resourceFullDirPath,
   };
 };
 
