@@ -86,7 +86,7 @@ describe('correct error handling', () => {
     await expect(pageLoader(fullUrl, notExistsOutput)).rejects.toThrow(expected);
   });
   it('should throw because permission denied', async () => {
-    const withoutPermissonOutput = '/cdrom';
+    const withoutPermissonOutput = '/bin';
     const fullResourcesDirPath = join(withoutPermissonOutput, resourcesDirPath);
     const expected = `EACCES: permission denied, mkdir '${fullResourcesDirPath}`;
     await expect(pageLoader(fullUrl, withoutPermissonOutput)).rejects.toThrow(expected);
