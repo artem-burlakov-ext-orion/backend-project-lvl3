@@ -2,6 +2,10 @@ import { promises as fsp, createWriteStream } from 'fs';
 import cheerio from 'cheerio';
 import { join } from 'path';
 import axios from 'axios';
+import debug from 'debug';
+import getHumanLikeError from './errors.js';
+
+const log = debug('page-loader');
 
 const SUFFIX = '_files';
 
@@ -43,7 +47,10 @@ const tags = {
   img: 'src',
 };
 
-const makeDir = (dir) => fsp.mkdir(dir);
+const makeDir = (dir) => {
+  log('Make output dir');
+  return fsp.mkdir(dir);
+}
 
 const getData = (dom, url, output) => {
   const resourceDirPath = getLocalDirName(url);
@@ -76,10 +83,18 @@ const getData = (dom, url, output) => {
   };
 };
 
-const parseByUrl = (url, output) => new Promise((resolve, reject) => axios.get(url)
-  .then((res) => resolve(getData(cheerio.load(res.data), url, output)))
-  .catch((error) => reject(error)));
-
+const parseByUrl = (url, output) => {
+  log('Set arguments for parsing');
+  log(`Url: ${url}`);
+  log(`Output: ${output}`);
+  log('Start parsing')
+  return axios.get(url)
+  .then(({ data }) => getData(cheerio.load(data), url, output))
+  .catch(({ message }) => {
+    throw new Error(getHumanLikeError('parsing', url, message));
+  });
+};
+  
 const downloadFile = (source, target) => axios({ method: 'get', url: source, responseType: 'stream' })
   .then(({ data }) => {
     const stream = data.pipe(createWriteStream(target));
@@ -87,11 +102,20 @@ const downloadFile = (source, target) => axios({ method: 'get', url: source, res
       stream.on('finish', () => resolve());
       stream.on('error', () => reject());
     });
+  })
+  .catch(({ message }) => {
+    throw new Error(getHumanLikeError('downloading', source, message));
   });
 
-const saveResources = (data) => data.map(({ source, target }) => downloadFile(source, target));
+const saveResources = (data) => {
+  log('Save resources');
+  return data.map(({ source, target }) => downloadFile(source, target));
+};
 
-const saveHtml = (html) => fsp.writeFile(html.target, html.content);
+const saveHtml = (html) => {
+  log('Save html');
+  return fsp.writeFile(html.target, html.content);
+};
 
 const saveData = (data) => Promise.all([saveHtml(data.html), ...saveResources(data.resources)]);
 
