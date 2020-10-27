@@ -3,6 +3,7 @@ import cheerio from 'cheerio';
 import { join } from 'path';
 import axios from 'axios';
 import debug from 'debug';
+import 'axios-debug-log';
 import getHumanLikeError from './errors.js';
 
 const log = debug('page-loader');
@@ -97,6 +98,7 @@ const parseByUrl = (url, output) => {
 
 const downloadFile = (source, target) => axios({ method: 'get', url: source, responseType: 'stream' })
   .then(({ data }) => {
+    log('Start downloading resource');
     const stream = data.pipe(createWriteStream(target));
     return new Promise((resolve, reject) => {
       stream.on('finish', () => resolve());
