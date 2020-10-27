@@ -44,22 +44,22 @@ beforeEach(async () => {
 });
 
 describe('get response with mock, parse it and return correct data', () => {
-  test('should create сorrect html file name', async () => {
+  it('should create сorrect html file name', async () => {
     await pageLoader(fullUrl, output);
     const htmlPath = join(output, 'ru-hexlet-io-courses.html');
     await expect(isFileExist(htmlPath)).resolves.toBe(true);
   });
-  test('should return сorrect html content', async () => {
+  it('should return сorrect html content', async () => {
     await pageLoader(fullUrl, output);
     const html = join(output, 'ru-hexlet-io-courses.html');
     await expect(fsp.readFile(html, 'utf8')).resolves.toBe(afterParsingHtml);
   });
-  test('should download all resources', async () => {
+  it('should download all resources', async () => {
     await pageLoader(fullUrl, output);
     const resourcesOutputDirFullPath = join(output, resourcesDirPath);
     await expect(fsp.readdir(resourcesOutputDirFullPath)).resolves.toEqual(expectedResources);
   });
-  test('compare %s and %s', async () => {
+  it('compare expected and recieved resource', async () => {
     await pageLoader(fullUrl, output);
     expectedResources.forEach(async (fileName) => {
       const resourcesOutputDirFullPath = join(output, resourcesDirPath);
@@ -81,9 +81,7 @@ describe('correct error handling', () => {
   });
   it('should throw because output not exists', async () => {
     const notExistsOutput = getPath('notExistsOutput');
-    console.log(notExistsOutput);
     const fullResourcesDirPath = join(notExistsOutput, resourcesDirPath);
-    console.log(fullResourcesDirPath);
     const expected = `ENOENT: no such file or directory, mkdir '${fullResourcesDirPath}'`;
     await expect(pageLoader(fullUrl, notExistsOutput)).rejects.toThrow(expected);
   });
