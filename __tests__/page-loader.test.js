@@ -9,56 +9,65 @@ const { promises: fsp } = fs;
 
 nock.disableNetConnect();
 
-let getPath;
-let getResourcePath;
+let getResourceTestFullPath;
 let fullUrl;
 let baseUrl;
-let resourcesPath;
-let output;
+let resourcesDirPath;
 let expectedResources;
-let beforeParsing;
-let afterParsing;
+let output;
+let beforeParsingHtml;
+let afterParsingHtml;
 let rss;
 
 const isFileExist = (filePath) => fsp.access(filePath).then(() => true).catch(() => false);
+const getPath = (name) => join(dirname(fileURLToPath(import.meta.url)), '..', '__fixtures__', name);
 
 beforeAll(async () => {
   fullUrl = 'https://ru.hexlet.io/courses';
   baseUrl = 'https://ru.hexlet.io';
-  resourcesPath = 'ru-hexlet-io-courses_files';
-  getPath = (name) => join(dirname(fileURLToPath(import.meta.url)), '..', '__fixtures__', name);
-  getResourcePath = (resourceName) => join(getPath(resourcesPath), resourceName);
-  beforeParsing = await fsp.readFile(join(getPath(resourcesPath), 'ru-hexlet-io-courses.html'), 'utf8');
-  afterParsing = await fsp.readFile(getPath('ru-hexlet-io-courses.html'), 'utf8');
-  rss = await fsp.readFile(getResourcePath('ru-hexlet-io-lessons.rss'), 'utf8');
+  resourcesDirPath = 'ru-hexlet-io-courses_files';
+  getResourceTestFullPath = (resourceName) => join(getPath(resourcesDirPath), resourceName);
+  beforeParsingHtml = await fsp.readFile(join(getPath(resourcesDirPath), 'ru-hexlet-io-courses.html'), 'utf8');
+  afterParsingHtml = await fsp.readFile(getPath('ru-hexlet-io-courses.html'), 'utf8');
+  expectedResources = await fsp.readdir(getPath(resourcesDirPath));
+  rss = await fsp.readFile(getResourceTestFullPath('ru-hexlet-io-lessons.rss'), 'utf8');
   nock(baseUrl)
     .persist()
     .get('/courses')
-    .reply(200, beforeParsing)
+    .reply(200, beforeParsingHtml)
     .get('/lessons.rss')
-    .reply(200, rss)
-
+    .reply(200, rss);
 });
 
 beforeEach(async () => {
   output = await fsp.mkdtemp(join(os.tmpdir(), 'page-loader-'));
-  expectedResources = await fsp.readdir(getPath(resourcesPath));
 });
 
 describe('get response with mock, parse it and return correct data', () => {
-  it('should create сorrect html file name', async () => {
+  test('should create сorrect html file name', async () => {
     await pageLoader(fullUrl, output);
     const htmlPath = join(output, 'ru-hexlet-io-courses.html');
     await expect(isFileExist(htmlPath)).resolves.toBe(true);
   });
-  it('should return сorrect html content', async () => {
+  test('should return сorrect html content', async () => {
     await pageLoader(fullUrl, output);
     const html = join(output, 'ru-hexlet-io-courses.html');
-    await expect(fsp.readFile(html, 'utf8')).resolves.toBe(afterParsing);
+    await expect(fsp.readFile(html, 'utf8')).resolves.toBe(afterParsingHtml);
   });
-  it('should download all resources', async () => {
+  test('should download all resources', async () => {
     await pageLoader(fullUrl, output);
-    await expect(fsp.readdir(join(output, resourcesPath))).resolves.toEqual(expectedResources);
+    const resourcesOutputDirFullPath = join(output, resourcesDirPath);
+    await expect(fsp.readdir(resourcesOutputDirFullPath)).resolves.toEqual(expectedResources);
+  });
+  test('compare %s and %s', async () => {
+    await pageLoader(fullUrl, output);
+    expectedResources.forEach(async (fileName) => {
+      const resourcesOutputDirFullPath = join(output, resourcesDirPath);
+      const outputResource = join(resourcesOutputDirFullPath, fileName);
+      const expectedResource = getResourceTestFullPath(fileName);
+      const expected = await fsp.readFile(expectedResource, 'utf8');
+      await expect(fsp.readFile(outputResource, 'utf8')).resolves.toBe(expected);
+    });
   });
 });
 
@@ -68,19 +77,20 @@ describe('correct error handling', () => {
     const invalidFullUrl = `${baseUrl}${invalidRelativeUrl}`;
     const expected = `getaddrinfo ENOTFOUND ${invalidFullUrl}`;
     nock(baseUrl).get(invalidRelativeUrl).replyWithError(expected);
-    await expect(pageLoader(invalidFullUrl)).rejects.toThrow(expected);
+    await expect(pageLoader(invalidFullUrl, output)).rejects.toThrow(expected);
   });
   it('should throw because output not exists', async () => {
     const notExistsOutput = getPath('notExistsOutput');
-    const fullResourcesPath = join(notExistsOutput, resourcesPath);
-    const expected = `ENOENT: no such file or directory, mkdir '${fullResourcesPath}'`;
+    console.log(notExistsOutput);
+    const fullResourcesDirPath = join(notExistsOutput, resourcesDirPath);
+    console.log(fullResourcesDirPath);
+    const expected = `ENOENT: no such file or directory, mkdir '${fullResourcesDirPath}'`;
     await expect(pageLoader(fullUrl, notExistsOutput)).rejects.toThrow(expected);
   });
   it('should throw because permission denied', async () => {
     const withoutPermissonOutput = '/cdrom';
-    const fullResourcesPath = join(withoutPermissonOutput, resourcesPath);
-    const expected = `EACCES: permission denied, mkdir '${fullResourcesPath}`;
+    const fullResourcesDirPath = join(withoutPermissonOutput, resourcesDirPath);
+    const expected = `EACCES: permission denied, mkdir '${fullResourcesDirPath}`;
     await expect(pageLoader(fullUrl, withoutPermissonOutput)).rejects.toThrow(expected);
   });
-  
-})
+});
