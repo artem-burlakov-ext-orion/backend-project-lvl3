@@ -50,7 +50,7 @@ const tags = {
 const makeDir = (dir) => {
   log('Make output dir');
   return fsp.mkdir(dir);
-}
+};
 
 const getData = (dom, url, output) => {
   const resourceDirPath = getLocalDirName(url);
@@ -87,14 +87,14 @@ const parseByUrl = (url, output) => {
   log('Set arguments for parsing');
   log(`Url: ${url}`);
   log(`Output: ${output}`);
-  log('Start parsing')
+  log('Start parsing');
   return axios.get(url)
-  .then(({ data }) => getData(cheerio.load(data), url, output))
-  .catch(({ message }) => {
-    throw new Error(getHumanLikeError('parsing', url, message));
-  });
+    .then(({ data }) => getData(cheerio.load(data), url, output))
+    .catch(({ message }) => {
+      throw new Error(getHumanLikeError('parsing', url, message));
+    });
 };
-  
+
 const downloadFile = (source, target) => axios({ method: 'get', url: source, responseType: 'stream' })
   .then(({ data }) => {
     const stream = data.pipe(createWriteStream(target));

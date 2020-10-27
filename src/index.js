@@ -1,4 +1,3 @@
-
 import { parseByUrl, makeDir, saveData } from './util.js';
 
 export default (url, output = process.cwd()) => parseByUrl(url, output)
