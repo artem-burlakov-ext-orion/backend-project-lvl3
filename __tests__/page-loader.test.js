@@ -76,5 +76,11 @@ describe('correct error handling', () => {
     const expected = `ENOENT: no such file or directory, mkdir '${fullResourcesPath}'`;
     await expect(pageLoader(fullUrl, notExistsOutput)).rejects.toThrow(expected);
   });
+  it('should throw because permission denied', async () => {
+    const withoutPermissonOutput = '/cdrom';
+    const fullResourcesPath = join(withoutPermissonOutput, resourcesPath);
+    const expected = `EACCES: permission denied, mkdir '${fullResourcesPath}`;
+    await expect(pageLoader(fullUrl, withoutPermissonOutput)).rejects.toThrow(expected);
+  });
   
 })
