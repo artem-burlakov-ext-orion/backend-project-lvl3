@@ -13,7 +13,7 @@ let getPath;
 let getResourcePath;
 let fullUrl;
 let baseUrl;
-let resources;
+let resourcesPath;
 let output;
 let expectedResources;
 let beforeParsing;
@@ -25,10 +25,10 @@ const isFileExist = (filePath) => fsp.access(filePath).then(() => true).catch(()
 beforeAll(async () => {
   fullUrl = 'https://ru.hexlet.io/courses';
   baseUrl = 'https://ru.hexlet.io';
-  resources = 'ru-hexlet-io-courses_files';
+  resourcesPath = 'ru-hexlet-io-courses_files';
   getPath = (name) => join(dirname(fileURLToPath(import.meta.url)), '..', '__fixtures__', name);
-  getResourcePath = (resource) => join(getPath(resources), resource);
-  beforeParsing = await fsp.readFile(join(getPath(resources), 'ru-hexlet-io-courses.html'), 'utf8');
+  getResourcePath = (resourceName) => join(getPath(resourcesPath), resourceName);
+  beforeParsing = await fsp.readFile(join(getPath(resourcesPath), 'ru-hexlet-io-courses.html'), 'utf8');
   afterParsing = await fsp.readFile(getPath('ru-hexlet-io-courses.html'), 'utf8');
   rss = await fsp.readFile(getResourcePath('ru-hexlet-io-lessons.rss'), 'utf8');
   nock(baseUrl)
@@ -36,15 +36,16 @@ beforeAll(async () => {
     .get('/courses')
     .reply(200, beforeParsing)
     .get('/lessons.rss')
-    .reply(200, rss);
+    .reply(200, rss)
+
 });
 
 beforeEach(async () => {
   output = await fsp.mkdtemp(join(os.tmpdir(), 'page-loader-'));
-  expectedResources = await fsp.readdir(getPath(resources));
+  expectedResources = await fsp.readdir(getPath(resourcesPath));
 });
 
-describe('get response with mock and parse to correct data', () => {
+describe('get response with mock, parse it and return correct data', () => {
   it('should create сorrect html file name', async () => {
     await pageLoader(fullUrl, output);
     const htmlPath = join(output, 'ru-hexlet-io-courses.html');
@@ -57,6 +58,23 @@ describe('get response with mock and parse to correct data', () => {
   });
   it('should download all resources', async () => {
     await pageLoader(fullUrl, output);
-    await expect(fsp.readdir(join(output, resources))).resolves.toEqual(expectedResources);
+    await expect(fsp.readdir(join(output, resourcesPath))).resolves.toEqual(expectedResources);
   });
 });
+
+describe('correct error handling', () => {
+  it('should throw because bad url', async () => {
+    const invalidRelativeUrl = '/cat-poems';
+    const invalidFullUrl = `${baseUrl}${invalidRelativeUrl}`;
+    const expected = `getaddrinfo ENOTFOUND ${invalidFullUrl}`;
+    nock(baseUrl).get(invalidRelativeUrl).replyWithError(expected);
+    await expect(pageLoader(invalidFullUrl)).rejects.toThrow(expected);
+  });
+  it('should throw because output not exists', async () => {
+    const notExistsOutput = getPath('notExistsOutput');
+    const fullResourcesPath = join(notExistsOutput, resourcesPath);
+    const expected = `ENOENT: no such file or directory, mkdir '${fullResourcesPath}'`;
+    await expect(pageLoader(fullUrl, notExistsOutput)).rejects.toThrow(expected);
+  });
+  
+})

@@ -2,7 +2,6 @@
 
 import program from 'commander';
 import pageLoader from '../index.js';
-// import { getVersion } from '../util.js';
 
 program
   .version('0.0.1')

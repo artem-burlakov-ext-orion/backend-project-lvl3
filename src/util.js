@@ -43,7 +43,7 @@ const tags = {
   img: 'src',
 };
 
-const makeDir = (dir) => fsp.mkdir(dir, { recursive: true });
+const makeDir = (dir) => fsp.mkdir(dir);
 
 const getData = (dom, url, output) => {
   const resourceDirPath = getLocalDirName(url);
@@ -78,7 +78,7 @@ const getData = (dom, url, output) => {
 
 const parseByUrl = (url, output) => new Promise((resolve, reject) => axios.get(url)
   .then((res) => resolve(getData(cheerio.load(res.data), url, output)))
-  .catch(() => reject()));
+  .catch((error) => reject(error)));
 
 const downloadFile = (source, target) => axios({ method: 'get', url: source, responseType: 'stream' })
   .then(({ data }) => {
