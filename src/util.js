@@ -51,7 +51,10 @@ const tags = {
 
 const makeDir = (dir) => {
   log('Make output dir');
-  return fsp.mkdir(dir);
+  return fsp.mkdir(dir)
+    .catch(({ message }) => {
+      throw new Error(getHumanLikeError('making directory', message, dir));
+  });
 };
 
 const getData = (dom, url, output) => {
