@@ -4,6 +4,7 @@ import { join } from 'path';
 import axios from 'axios';
 import debug from 'debug';
 import 'axios-debug-log';
+import Listr from 'listr';
 import getHumanLikeError from './errors.js';
 
 const log = debug('page-loader');
@@ -111,15 +112,25 @@ const downloadFile = (source, target) => axios({ method: 'get', url: source, res
 
 const saveResources = (data) => {
   log('Save resources');
-  return data.map(({ source, target }) => downloadFile(source, target));
+  return data.map(({ source, target }) => ({
+    title: `Download from ${source} to ${target}`,
+    task: () => downloadFile(source, target),
+  }));
 };
 
 const saveHtml = (html) => {
   log('Save html');
-  return fsp.writeFile(html.target, html.content);
+  return {
+    title: `Save html content to ${html.target}`,
+    task: () => fsp.writeFile(html.target, html.content),
+  };
 };
 
-const saveData = (data) => Promise.all([saveHtml(data.html), ...saveResources(data.resources)]);
+const saveData = (data) => {
+  const tasks = [saveHtml(data.html), ...saveResources(data.resources)];
+  const listr = new Listr(tasks, { concurrent: true });
+  return listr.run();
+};
 
 export {
   parseByUrl,
