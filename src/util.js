@@ -5,6 +5,7 @@ import axios from 'axios';
 import debug from 'debug';
 import 'axios-debug-log';
 import Listr from 'listr';
+import prettier from 'prettier';
 import getHumanLikeError from './errors.js';
 
 const log = debug('page-loader');
@@ -81,7 +82,7 @@ const getData = (dom, url, output) => {
   return {
     resources,
     html: {
-      content: dom.html(),
+      content: prettier.format(dom.html(), { parser: 'html'}),
       target: htmlFullPath,
     },
     resourcesDir: resourceFullDirPath,
@@ -94,7 +95,10 @@ const parseByUrl = (url, output) => {
   log(`Output: ${output}`);
   log('Start parsing');
   return axios.get(url)
-    .then(({ data }) => getData(cheerio.load(data), url, output))
+    .then(({ data }) => {
+      const dom = cheerio.load(data, { decodeEntities: false });
+      return getData(dom, url, output)
+    })
     .catch(({ message }) => {
       throw new Error(getHumanLikeError('parsing', url, message));
     });
@@ -116,7 +120,7 @@ const downloadFile = (source, target) => axios({ method: 'get', url: source, res
 const saveResources = (data) => {
   log('Save resources');
   return data.map(({ source, target }) => ({
-    title: `Download from ${source} to ${target}`,
+    title: `Download from '${source}' to '${target}'`,
     task: () => downloadFile(source, target),
   }));
 };
@@ -124,7 +128,7 @@ const saveResources = (data) => {
 const saveHtml = (html) => {
   log('Save html');
   return {
-    title: `Save html content to ${html.target}`,
+    title: `Save html content to '${html.target}'`,
     task: () => fsp.writeFile(html.target, html.content),
   };
 };
