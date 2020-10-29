@@ -55,7 +55,7 @@ const makeDir = (dir) => {
   return fsp.mkdir(dir)
     .catch(({ message }) => {
       throw new Error(getHumanLikeError('making directory', message, dir));
-  });
+    });
 };
 
 const getData = (dom, url, output) => {
@@ -82,7 +82,7 @@ const getData = (dom, url, output) => {
   return {
     resources,
     html: {
-      content: prettier.format(dom.html(), { parser: 'html'}),
+      content: prettier.format(dom.html(), { parser: 'html' }),
       target: htmlFullPath,
     },
     resourcesDir: resourceFullDirPath,
@@ -97,7 +97,7 @@ const parseByUrl = (url, output) => {
   return axios.get(url)
     .then(({ data }) => {
       const dom = cheerio.load(data, { decodeEntities: false });
-      return getData(dom, url, output)
+      return getData(dom, url, output);
     })
     .catch(({ message }) => {
       throw new Error(getHumanLikeError('parsing', url, message));

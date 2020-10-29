@@ -20,7 +20,6 @@ let afterParsingHtml;
 let css;
 let js;
 let png;
-let html;
 let before;
 let after;
 let resourcesOutputDirFullPath;
@@ -35,18 +34,12 @@ beforeAll(async () => {
   baseUrl = 'https://ru.hexlet.io';
   resourcesDirPath = 'ru-hexlet-io-courses_files';
   expectedResources = await fsp.readdir(join(after, resourcesDirPath));
-  getResourceFullPath = (fileName) => join(after, resourcesDirPath,  fileName);
-  
-  beforeParsingHtml = await fsp.readFile(join(before,'before.html'), 'utf8');
+  getResourceFullPath = (fileName) => join(after, resourcesDirPath, fileName);
+  beforeParsingHtml = await fsp.readFile(join(before, 'before.html'), 'utf8');
   afterParsingHtml = await fsp.readFile(join(after, 'ru-hexlet-io-courses.html'), 'utf8');
-
   css = await fsp.readFile(getResourceFullPath('ru-hexlet-io-assets-application.css'), 'utf8');
   js = await fsp.readFile(getResourceFullPath('ru-hexlet-io-packs-js-runtime.js'), 'utf8');
   png = await fsp.readFile(getResourceFullPath('ru-hexlet-io-assets-professions-nodejs.png'), 'utf8');
-  html = await fsp.readFile(getResourceFullPath('ru-hexlet-io-courses.html'), 'utf8');
-
-  
-
   nock(baseUrl)
     .persist()
     .get('/courses')
@@ -67,7 +60,6 @@ beforeEach(async () => {
 describe('get response with mock, parse it and return correct data', () => {
   it('should create сorrect html file name', async () => {
     await pageLoader(fullUrl, output);
-    
     const htmlPath = join(output, 'ru-hexlet-io-courses.html');
     await expect(isFileExist(htmlPath)).resolves.toBe(true);
   });
