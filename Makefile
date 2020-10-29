@@ -7,7 +7,7 @@ install:
 	npm link
 
 test:
-	DEBUG=axios,nock,page-loader npm test 
+	DEBUG=axios,nock.intercept,page-loader npm test 
 
 test-watch:
 	npm test -- --watch
