@@ -1,8 +1,8 @@
 {
   "name": "backend-project-lvl3",
   "version": "1.0.0",
-  "description": "![Actions Status](/workflows/hexlet-check/badge.svg)",
-  "main": "index.js",
+  "description": "Download and save html page",
+  "main": "src/index.js",
   "bin": {
     "page-loader": "src/bin/page-loader.js"
   },

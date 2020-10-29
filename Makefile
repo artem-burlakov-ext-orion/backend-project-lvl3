@@ -1,8 +1,13 @@
 ci:
 	npm ci
 
+install:
+	ci
+	publish
+	npm link
+
 test:
-	DEBUG=axios,page-loader npm test 
+	DEBUG=axios,nock,page-loader npm test 
 
 test-watch:
 	npm test -- --watch
