@@ -53,10 +53,10 @@ const tags = {
 const getOutputByFullDirPath = (dir) => dir.split('/').slice(1, -1).join('/');
 
 const makeDir = (dir) => fsp.mkdir(dir)
-    .catch(({ message }) => {
-      log(`Output does not exist '${getOutputByFullDirPath(dir)}'`);
-      throw new Error(getHumanLikeError('making directory', message, dir));
-    });
+  .catch(({ message }) => {
+    log(`Output does not exist '${getOutputByFullDirPath(dir)}'`);
+    throw new Error(getHumanLikeError('making directory', message, dir));
+  });
 
 const getData = (dom, url, output) => {
   const resourceDirPath = getLocalDirName(url);

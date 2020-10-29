@@ -11,7 +11,7 @@ simple cli tool for downloading page from internet and save it with all resource
 ## Install 
 - clone repo: git clone https://github.com/eifory/backend-project-lvl3.git
 - move to local repo folder
-- run: make install 
+- finally run: make install 
 
 ## Example 
 page-loader --output /var/tmp https://hexlet.io/courses
