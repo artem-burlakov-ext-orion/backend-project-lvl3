@@ -2,7 +2,7 @@ ci:
 	npm ci
 
 test:
-	npm test 
+	DEBUG=axios,page-loader npm test 
 
 test-watch:
 	npm test -- --watch

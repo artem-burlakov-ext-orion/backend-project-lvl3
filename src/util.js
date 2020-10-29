@@ -50,13 +50,13 @@ const tags = {
   img: 'src',
 };
 
-const makeDir = (dir) => {
-  log('Make output dir');
-  return fsp.mkdir(dir)
+const getOutputByFullDirPath = (dir) => dir.split('/').slice(1, -1).join('/');
+
+const makeDir = (dir) => fsp.mkdir(dir)
     .catch(({ message }) => {
+      log(`Output does not exist '${getOutputByFullDirPath(dir)}'`);
       throw new Error(getHumanLikeError('making directory', message, dir));
     });
-};
 
 const getData = (dom, url, output) => {
   const resourceDirPath = getLocalDirName(url);
@@ -90,10 +90,7 @@ const getData = (dom, url, output) => {
 };
 
 const parseByUrl = (url, output) => {
-  log('Set arguments for parsing');
-  log(`Url: ${url}`);
-  log(`Output: ${output}`);
-  log('Start parsing');
+  log(`Start parsing '${url}'`);
   return axios.get(url)
     .then(({ data }) => {
       const dom = cheerio.load(data, { decodeEntities: false });
@@ -106,8 +103,9 @@ const parseByUrl = (url, output) => {
 
 const downloadFile = (source, target) => axios({ method: 'get', url: source, responseType: 'stream' })
   .then(({ data }) => {
-    log('Start downloading resource');
+    log(`Start downloading resource '${source}'`);
     const stream = data.pipe(createWriteStream(target));
+    log(`Save resource to '${target}'`);
     return new Promise((resolve, reject) => {
       stream.on('finish', () => resolve());
       stream.on('error', () => reject());

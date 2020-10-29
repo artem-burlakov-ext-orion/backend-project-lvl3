@@ -66,7 +66,7 @@ describe('get response with mock, parse it and return correct data', () => {
   it('should return сorrect html content', async () => {
     await pageLoader(fullUrl, output);
     const html = join(output, 'ru-hexlet-io-courses.html');
-    await expect(fsp.readFile(html, 'utf-8')).resolves.toBe(afterParsingHtml);
+    await expect(fsp.readFile(html, 'utf8')).resolves.toBe(afterParsingHtml);
   });
   it('should download all resources', async () => {
     await pageLoader(fullUrl, output);
