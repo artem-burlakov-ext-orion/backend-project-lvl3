@@ -10,36 +10,12 @@ import getHumanLikeError from './errors.js';
 
 const log = debug('page-loader');
 
-const SUFFIX = '_files';
+const DIRFIX = '_files';
+const HTMLFIX = '.html';
 
-const isAlphaNumeric = (sym) => sym.toUpperCase() !== sym || Number.isInteger(sym);
-
-const convertData = (sym) => (isAlphaNumeric(sym) ? sym : '-');
-
-const getConvertedPathByUrl = (fullUrl) => {
-  const url = fullUrl.split('//')[1].split('');
-  return url.reduce((acc, elem) => `${acc}${convertData(elem)}`, '');
-};
-
-const getHtmlFilePath = (url) => `${getConvertedPathByUrl(url)}.html`;
-const getHtmlFullPath = (url, dir) => join(dir, getHtmlFilePath(url));
-
-const getConverted = (str) => str.replace(/\W/g, '-');
-const getLocalDirName = (host) => {
-  const preparedHost = host.split('//')[1];
-  return `${getConverted(preparedHost)}${SUFFIX}`;
-};
-const isLast = (index, length) => index === length - 1;
-const getLastHref = (href) => (href.includes('.') ? href : `${href}.html`);
-
-const getLocalFileName = (href) => {
-  const preparedHref = href.split('//')[1].split('/');
-  return preparedHref.map((preHref, i) => {
-    if (isLast(i, preparedHref.length)) {
-      return getLastHref(preHref);
-    }
-    return getConverted(preHref);
-  }).join('-');
+const getConverted = (url) => {
+  const newUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+  return newUrl.replace(/\W/g, '-');
 };
 
 const isLocalResource = (data, origin) => data.origin === origin || !data.href.includes('//');
@@ -58,11 +34,32 @@ const makeDir = (dir) => fsp.mkdir(dir)
     throw new Error(getHumanLikeError('making directory', message, dir));
   });
 
+const getBaseName = (url) => getConverted(url.split('//')[1]);
+
+const getNames = (url) => {
+  const name = getBaseName(url);
+  return {
+    resourcesDir: `${name}${DIRFIX}`,
+    htmlFile: `${name}${HTMLFIX}`,
+  };
+};
+
+const isLast = (index, length) => index === length - 1;
+const getLastHref = (href) => (href.includes('.') ? href : `${href}.html`);
+
+const getLocalResourceFileName = (href) => {
+  const preparedHref = href.split('//')[1].split('/');
+  return preparedHref.map((preHref, i) => {
+    if (isLast(i, preparedHref.length)) {
+      return getLastHref(preHref);
+    }
+    return getConverted(preHref);
+  }).join('-');
+};
+
 const getData = (dom, url, output) => {
-  const resourceDirPath = getLocalDirName(url);
-  const resourceFullDirPath = join(output, resourceDirPath);
-  const htmlFullPath = getHtmlFullPath(url, output);
   const urlData = new URL(url);
+  const names = getNames(url);
   const resources = Object.entries(tags).reduce((acc, [key, value]) => {
     const current = [];
     dom(`${key}[${value}]`).attr(value, (i, elem) => {
@@ -70,10 +67,10 @@ const getData = (dom, url, output) => {
       if (!isLocalResource(attrUrlData, urlData.origin)) {
         return elem;
       }
-      const resourceFileName = getLocalFileName(attrUrlData.href);
-      const localHref = join(resourceDirPath, resourceFileName);
+      const resourceFileName = getLocalResourceFileName(attrUrlData.href);
+      const localHref = join(names.resourcesDir, resourceFileName);
       const source = attrUrlData.href;
-      const target = join(resourceFullDirPath, resourceFileName);
+      const target = join(output, localHref);
       current.push({ source, target });
       return elem.replace(/.*/, localHref);
     });
@@ -83,9 +80,9 @@ const getData = (dom, url, output) => {
     resources,
     html: {
       content: prettier.format(dom.html(), { parser: 'html' }),
-      target: htmlFullPath,
+      target: join(output, names.htmlFile),
     },
-    resourcesDir: resourceFullDirPath,
+    resourcesDirFull: join(output, names.resourcesDir),
   };
 };
 
