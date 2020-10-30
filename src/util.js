@@ -1,6 +1,6 @@
 import { promises as fsp, createWriteStream } from 'fs';
 import cheerio from 'cheerio';
-import { join } from 'path';
+import { join, parse } from 'path';
 import axios from 'axios';
 import debug from 'debug';
 import 'axios-debug-log';
@@ -12,10 +12,11 @@ const log = debug('page-loader');
 
 const DIRFIX = '_files';
 const HTMLFIX = '.html';
+const NAMEFIX = '-';
 
 const getConverted = (url) => {
   const newUrl = url.endsWith('/') ? url.slice(0, -1) : url;
-  return newUrl.replace(/\W/g, '-');
+  return newUrl.replace(/\W/g, NAMEFIX);
 };
 
 const isLocalResource = (data, origin) => data.origin === origin || !data.href.includes('//');
@@ -44,17 +45,14 @@ const getNames = (url) => {
   };
 };
 
-const isLast = (index, length) => index === length - 1;
-const getLastHref = (href) => (href.includes('.') ? href : `${href}.html`);
-
-const getLocalResourceFileName = (href) => {
-  const preparedHref = href.split('//')[1].split('/');
-  return preparedHref.map((preHref, i) => {
-    if (isLast(i, preparedHref.length)) {
-      return getLastHref(preHref);
-    }
-    return getConverted(preHref);
-  }).join('-');
+const getLocalResourceFileName = (data) => {
+  const href = `${data.hostname}${data.pathname}`;
+  if (!data.pathname.includes('.')) {
+    return `${getConverted(href)}.html`;
+  }
+  const parsedHref = parse(href);
+  const base = `${parsedHref.dir}/${parsedHref.name}`;
+  return `${getConverted(base)}${parsedHref.ext}`;
 };
 
 const getData = (dom, url, output) => {
@@ -67,7 +65,7 @@ const getData = (dom, url, output) => {
       if (!isLocalResource(attrUrlData, urlData.origin)) {
         return elem;
       }
-      const resourceFileName = getLocalResourceFileName(attrUrlData.href);
+      const resourceFileName = getLocalResourceFileName(attrUrlData);
       const localHref = join(names.resourcesDir, resourceFileName);
       const source = attrUrlData.href;
       const target = join(output, localHref);
