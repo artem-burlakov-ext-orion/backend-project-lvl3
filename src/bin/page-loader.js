@@ -6,7 +6,11 @@ import pageLoader from '../index.js';
 program
   .version('0.0.1')
   .description('download page and save it')
-  .option('-o, --output [path]', 'output dir path', `${process.cwd()}`)
+  .option('-o, --output [path]', 'output dir path', process.cwd())
   .arguments('<url>')
-  .action((url) => pageLoader(url, program.output))
+  .action((url) => pageLoader(url, program.output)
+    .catch(({ message }) => {
+      console.error(message);
+      process.exit(1);
+    }))
   .parse(process.argv);

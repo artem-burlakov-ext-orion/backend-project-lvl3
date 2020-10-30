@@ -14,4 +14,4 @@ simple cli tool for downloading page from internet and save it with all resource
 - finally run: make install 
 
 ## Example 
-page-loader --output /var/tmp https://hexlet.io/courses
+page-loader --output /var/tmp https://nodejs.org/en/

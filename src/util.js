@@ -130,8 +130,7 @@ const saveHtml = (html) => {
 
 const saveData = (data) => {
   const tasks = [saveHtml(data.html), ...saveResources(data.resources)];
-  const listr = new Listr(tasks, { concurrent: true });
-  return listr.run();
+  return new Listr(tasks, { concurrent: true }).run();
 };
 
 export {
