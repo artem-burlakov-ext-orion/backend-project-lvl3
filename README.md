@@ -17,6 +17,10 @@ simple cli tool for downloading page from internet and save it with all resource
 page-loader --output /var/tmp https://nodejs.org/en/
 
 <p>
+<a href="https://asciinema.org/a/lzsfnLoWupGn1ghDHAEDLsh9Q" target="_blank"><img src="https://asciinema.org/a/lzsfnLoWupGn1ghDHAEDLsh9Q.svg" /></a>
+</p>
+
+<p>
 <a href="https://asciinema.org/a/XLaZzsKaR5EqLxDPZF4Qu3oTz" target="_blank"><img src="https://asciinema.org/a/XLaZzsKaR5EqLxDPZF4Qu3oTz.svg" /></a>
 </p>
 
