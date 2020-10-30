@@ -6,7 +6,7 @@
 [![Test Coverage](https://api.codeclimate.com/v1/badges/768d7e90d9b33ec82483/test_coverage)](https://codeclimate.com/github/eifory/backend-project-lvl3/test_coverage)
 
 ## Page-loader
-simple cli tool for downloading page from internet and save it with all resources. 
+simple cli tool for downloading page from internet and save it with all resources 
 
 ## Install 
 - clone repo: git clone https://github.com/eifory/backend-project-lvl3.git
