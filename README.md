@@ -15,3 +15,15 @@ simple cli tool for downloading page from internet and save it with all resource
 
 ## Example 
 page-loader --output /var/tmp https://nodejs.org/en/
+
+<p>
+<a href="https://asciinema.org/a/XLaZzsKaR5EqLxDPZF4Qu3oTz" target="_blank"><img src="https://asciinema.org/a/XLaZzsKaR5EqLxDPZF4Qu3oTz.svg" /></a>
+</p>
+
+<p>
+<a href="https://asciinema.org/a/6pQBIoZC4xQCL1nE8EULVmchz" target="_blank"><img src="https://asciinema.org/a/6pQBIoZC4xQCL1nE8EULVmchz.svg" /></a>
+</p>
+
+<p>
+<a href="https://asciinema.org/a/9AeX8eOmSnArL0GDuzuSNLcjA" target="_blank"><img src="https://asciinema.org/a/9AeX8eOmSnArL0GDuzuSNLcjA.svg" /></a>
+</p>
