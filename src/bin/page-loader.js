@@ -9,6 +9,7 @@ program
   .option('-o, --output [path]', 'output dir path', process.cwd())
   .arguments('<url>')
   .action((url) => pageLoader(url, program.output)
+    .then(() => console.log('\nDone!'))
     .catch(({ message }) => {
       console.error(message);
       process.exit(1);

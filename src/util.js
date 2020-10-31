@@ -92,7 +92,7 @@ const parseByUrl = (url, output) => {
       return getData(dom, url, output);
     })
     .catch(({ message }) => {
-      throw new Error(getHumanLikeError('parsing', url, message));
+      throw new Error(getHumanLikeError('parsing', message, url));
     });
 };
 
@@ -107,7 +107,7 @@ const downloadFile = (source, target) => axios({ method: 'get', url: source, res
     });
   })
   .catch(({ message }) => {
-    throw new Error(getHumanLikeError('downloading', source, message));
+    throw new Error(getHumanLikeError('downloading', message, source));
   });
 
 const saveResources = (data) => {
