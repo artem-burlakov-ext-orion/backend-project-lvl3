@@ -1,12 +1,6 @@
 ### Tests, code quality and linter status:
 
-![Alt text](https://potherca-blog.github.io/StackOverflow/question.13808020.include-an-svg-hosted-on-github-in-markdown/controllers_brief.svg)
-<img src="https://potherca-blog.github.io/StackOverflow/question.13808020.include-an-svg-hosted-on-github-in-markdown/controllers_brief.svg">
-
-https://github.com/eifory/backend-project-lvl3/actions?query=workflow%3A%22Node+CI%22
-![CI](https://github.com/eifory/backend-project-lvl3/workflows/CI/badge.svg?branch=master&event=push)
-![Node CI](https://github.com/eifory/backend-project-lvl3/workflows/Node%20CI/badge.svg)
-![Node CI](https://github.com/eifory/backend-project-lvl3/actions?query=workflow:"Node.js+CI")
+[![Node CI](https://github.com/eifory/backend-project-lvl3/workflows/CI/badge.svg)](https://github.com/eifory/backend-project-lvl3/actions?query=workflow:"Node.js+CI")
 ![hexlet-check](https://github.com/eifory/backend-project-lvl3/workflows/hexlet-check/badge.svg)
 [![Maintainability](https://api.codeclimate.com/v1/badges/768d7e90d9b33ec82483/maintainability)](https://codeclimate.com/github/eifory/backend-project-lvl3/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/768d7e90d9b33ec82483/test_coverage)](https://codeclimate.com/github/eifory/backend-project-lvl3/test_coverage)
