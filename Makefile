@@ -1,10 +1,11 @@
-install:
-	npm ci
-	npm publish --dry-run
-	npm link
+setup:
+	ci install
 
 ci:
 	npm ci
+
+install:
+	npm link
 
 test:
 	DEBUG=axios,nock.intercept,page-loader npm test 
