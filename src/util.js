@@ -5,7 +5,6 @@ import axios from 'axios';
 import debug from 'debug';
 import 'axios-debug-log';
 import Listr from 'listr';
-import prettier from 'prettier';
 import getHumanLikeError from './errors.js';
 
 const log = debug('page-loader');
@@ -77,7 +76,7 @@ const getData = (dom, url, output) => {
   return {
     resources,
     html: {
-      content: prettier.format(dom.html(), { parser: 'html' }),
+      content: dom.html(),
       target: join(output, names.htmlFile),
     },
     resourcesDirFull: join(output, names.resourcesDir),

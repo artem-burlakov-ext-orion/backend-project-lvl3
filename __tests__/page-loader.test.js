@@ -3,6 +3,7 @@ import os from 'os';
 import nock from 'nock';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import prettier from 'prettier';
 import pageLoader from '../src/index';
 
 const { promises: fsp } = fs;
@@ -69,7 +70,7 @@ describe('get response with mock, parse it and return correct html', () => {
   test('should return сorrect html content', async () => {
     await pageLoader(fullUrl, output);
     const html = join(output, 'ru-hexlet-io-courses.html');
-    await expect(fsp.readFile(html, 'utf8')).resolves.toBe(afterParsingHtml);
+    expect(prettier.format(await fsp.readFile(html, 'utf8'), { parser: 'html' })).toBe(afterParsingHtml);
   });
   test.each(Object.values(resources))('%s', async (path) => {
     const outputFullPath = join(output, path);
