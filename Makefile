@@ -1,5 +1,4 @@
-setup:
-	ci install
+setup: ci install
 
 ci:
 	npm ci
