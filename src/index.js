@@ -1,9 +1,13 @@
-import { parseByUrl, makeDir, saveData } from './util.js';
+import {
+  getPage,
+  getPageData,
+  makeResourcesDir,
+  downloadResources,
+  downloadHtml,
+} from './util.js';
 
-export default (url, output) => parseByUrl(url, output)
-  .then((data) => makeDir(data.resourcesDirFull)
-    .then(() => saveData(data))
-    .then(() => data.html.target))
-  .catch((error) => {
-    throw new Error(error);
-  });
+export default (url, output) => getPage(url, output)
+  .then((page) => getPageData(page, url, output))
+  .then((data) => makeResourcesDir(data))
+  .then((data) => downloadResources(data))
+  .then((html) => downloadHtml(html));

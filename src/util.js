@@ -5,7 +5,6 @@ import axios from 'axios';
 import debug from 'debug';
 import 'axios-debug-log';
 import Listr from 'listr';
-import getHumanLikeError from './errors.js';
 
 const log = debug('page-loader');
 
@@ -13,86 +12,70 @@ const DIRFIX = '_files';
 const HTMLFIX = '.html';
 const NAMEFIX = '-';
 
-const getConverted = (url) => {
-  const newUrl = url.endsWith('/') ? url.slice(0, -1) : url;
-  return newUrl.replace(/\W/g, NAMEFIX);
-};
-
-const isLocalResource = (data, origin) => data.origin === origin || !data.href.includes('//');
-
 const tags = {
   link: 'href',
   script: 'src',
   img: 'src',
 };
 
-const getOutputByFullDirPath = (dir) => dir.split('/').slice(1, -1).join('/');
-
-const makeDir = (dir) => fsp.mkdir(dir)
-  .catch(({ message }) => {
-    log(`Output does not exist '${getOutputByFullDirPath(dir)}'`);
-    throw new Error(getHumanLikeError('making directory', message, dir));
-  });
-
-const getBaseName = (url) => getConverted(url.split('//')[1]);
-
-const getNames = (url) => {
-  const name = getBaseName(url);
-  return {
-    resourcesDir: `${name}${DIRFIX}`,
-    htmlFile: `${name}${HTMLFIX}`,
-  };
+const getConverted = (url) => {
+  const newUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+  return newUrl.replace(/\W/g, NAMEFIX);
 };
 
-const getLocalResourceFileName = (data) => {
-  const href = `${data.hostname}${data.pathname}`;
-  if (!data.pathname.includes('.')) {
-    return `${getConverted(href)}.html`;
-  }
-  const parsedHref = parse(href);
-  const base = `${parsedHref.dir}/${parsedHref.name}`;
-  return `${getConverted(base)}${parsedHref.ext}`;
+const isResourceFromThisSite = (attrOrigin, urlOrigin) => attrOrigin === urlOrigin;
+
+const getDir = (data) => {
+  const dirName = getConverted(`${data.hostname}${data.pathname}`);
+  return `${dirName}${DIRFIX}`;
 };
 
-const getData = (dom, url, output) => {
+const getResourceLocalPath = (urlData, attrData) => {
+  const dirName = getDir(urlData);
+  const parsed = parse(`${attrData.hostname}${attrData.pathname}`);
+  const { base, dir, ext } = parsed;
+  const convertedFileName = (ext.includes('.')) ? `${getConverted(dir)}${NAMEFIX}${base}` : `${getConverted(dir)}${NAMEFIX}${base}${HTMLFIX}`;
+  return join(dirName, convertedFileName);
+};
+
+const getHtmlLocalPath = (output, urlData) => {
+  const baseName = getConverted(`${urlData.hostname}${urlData.pathname}`);
+  const fixedBaseName = `${getConverted(baseName)}${HTMLFIX}`;
+  return `${output}/${fixedBaseName}`;
+};
+
+const getPage = (url) => {
+  log(`Start parsing '${url}'`);
+  return axios.get(url)
+    .then(({ data }) => cheerio.load(data, { decodeEntities: false }));
+};
+
+const getPageData = (dom, url, output) => {
   const urlData = new URL(url);
-  const names = getNames(url);
-  const resources = Object.entries(tags).reduce((acc, [key, value]) => {
-    const current = [];
-    dom(`${key}[${value}]`).attr(value, (i, elem) => {
-      const attrUrlData = new URL(elem, urlData.href);
-      if (!isLocalResource(attrUrlData, urlData.origin)) {
-        return elem;
-      }
-      const resourceFileName = getLocalResourceFileName(attrUrlData);
-      const localHref = join(names.resourcesDir, resourceFileName);
-      const source = attrUrlData.href;
-      const target = join(output, localHref);
-      current.push({ source, target });
-      return elem.replace(/.*/, localHref);
-    });
-    return [...acc, ...current];
-  }, []);
+  const resources = Object.entries(tags)
+    .reduce((acc, [key, value]) => {
+      const current = [];
+      dom(`${key}[${value}]`).attr(value, (i, elem) => {
+        const attrData = new URL(elem, url);
+        if (!isResourceFromThisSite(attrData.origin, urlData.origin)) {
+          return elem;
+        }
+        const localPath = getResourceLocalPath(urlData, attrData);
+        const source = attrData.href;
+        const target = join(output, localPath);
+        current.push({ source, target });
+        return elem.replace(/.*/, localPath);
+      });
+      return [...acc, ...current];
+    }, []);
   return {
+    dir: join(output, getDir(urlData)),
     resources,
     html: {
       content: dom.html(),
-      target: join(output, names.htmlFile),
+      target: getHtmlLocalPath(output, urlData),
     },
-    resourcesDirFull: join(output, names.resourcesDir),
   };
-};
-
-const parseByUrl = (url, output) => {
-  log(`Start parsing '${url}'`);
-  return axios.get(url)
-    .then(({ data }) => {
-      const dom = cheerio.load(data, { decodeEntities: false });
-      return getData(dom, url, output);
-    })
-    .catch(({ message }) => {
-      throw new Error(getHumanLikeError('parsing', message, url));
-    });
 };
 
 const downloadFile = (source, target) => axios({ method: 'get', url: source, responseType: 'stream' })
@@ -104,34 +87,35 @@ const downloadFile = (source, target) => axios({ method: 'get', url: source, res
       stream.on('finish', () => resolve());
       stream.on('error', () => reject());
     });
-  })
-  .catch(({ message }) => {
-    throw new Error(getHumanLikeError('downloading', message, source));
   });
 
-const saveResources = (data) => {
+const makeResourcesDir = (data) => fsp.mkdir(data.dir)
+  .then(() => data);
+
+const downloadResources = (data) => {
   log('Save resources');
-  return data.map(({ source, target }) => ({
+  const tasks = data.resources.map(({ source, target }) => ({
     title: `Download from '${source}' to '${target}'`,
     task: () => downloadFile(source, target),
   }));
+  return new Listr(tasks, { concurrent: true }).run()
+    .then(() => data.html);
 };
 
-const saveHtml = (html) => {
+const downloadHtml = (html) => {
   log('Save html');
-  return {
+  const tasks = [{
     title: `Save html content to '${html.target}'`,
     task: () => fsp.writeFile(html.target, html.content),
-  };
-};
-
-const saveData = (data) => {
-  const tasks = [saveHtml(data.html), ...saveResources(data.resources)];
-  return new Listr(tasks, { concurrent: true }).run();
+  }];
+  return new Listr(tasks, { concurrent: true }).run()
+    .then(() => html.target);
 };
 
 export {
-  parseByUrl,
-  makeDir,
-  saveData,
+  getPage,
+  getPageData,
+  makeResourcesDir,
+  downloadResources,
+  downloadHtml,
 };

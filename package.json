@@ -4,7 +4,7 @@
   "description": "Download and save html page",
   "main": "index.js",
   "bin": {
-    "page-loader": "src/bin/page-loader.js"
+    "page-loader": "bin/page-loader.js"
   },
   "engines": {
     "node": ">=14"
