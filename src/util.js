@@ -1,4 +1,4 @@
-import { promises as fsp, createWriteStream } from 'fs';
+import { promises as fsp } from 'fs';
 import cheerio from 'cheerio';
 import { join, parse } from 'path';
 import axios from 'axios';
@@ -23,7 +23,7 @@ const getConverted = (url) => {
   return newUrl.replace(/\W/g, NAMEFIX);
 };
 
-const isResourceFromThisSite = (attrOrigin, urlOrigin) => attrOrigin === urlOrigin;
+const isInternal = (attrOrigin, urlOrigin) => attrOrigin === urlOrigin;
 
 const getDir = (data) => {
   const dirName = getConverted(`${data.hostname}${data.pathname}`);
@@ -34,14 +34,15 @@ const getResourceLocalPath = (urlData, attrData) => {
   const dirName = getDir(urlData);
   const parsed = parse(`${attrData.hostname}${attrData.pathname}`);
   const { base, dir, ext } = parsed;
-  const convertedFileName = (ext.includes('.')) ? `${getConverted(dir)}${NAMEFIX}${base}` : `${getConverted(dir)}${NAMEFIX}${base}${HTMLFIX}`;
-  return join(dirName, convertedFileName);
+  const convertedFileName = `${getConverted(dir)}${NAMEFIX}${base}`;
+  const fileName = ext.includes('.') ? convertedFileName : `${convertedFileName}${HTMLFIX}`;
+  return join(dirName, fileName);
 };
 
 const getHtmlLocalPath = (output, urlData) => {
   const baseName = getConverted(`${urlData.hostname}${urlData.pathname}`);
   const fixedBaseName = `${getConverted(baseName)}${HTMLFIX}`;
-  return `${output}/${fixedBaseName}`;
+  return join(output, fixedBaseName);
 };
 
 const getPage = (url) => {
@@ -57,7 +58,7 @@ const getPageData = (dom, url, output) => {
       const current = [];
       dom(`${key}[${value}]`).attr(value, (i, elem) => {
         const attrData = new URL(elem, url);
-        if (!isResourceFromThisSite(attrData.origin, urlData.origin)) {
+        if (!isInternal(attrData.origin, urlData.origin)) {
           return elem;
         }
         const localPath = getResourceLocalPath(urlData, attrData);
@@ -78,16 +79,8 @@ const getPageData = (dom, url, output) => {
   };
 };
 
-const downloadFile = (source, target) => axios({ method: 'get', url: source, responseType: 'stream' })
-  .then(({ data }) => {
-    log(`Start downloading resource '${source}'`);
-    const stream = data.pipe(createWriteStream(target));
-    log(`Save resource to '${target}'`);
-    return new Promise((resolve, reject) => {
-      stream.on('finish', () => resolve());
-      stream.on('error', () => reject());
-    });
-  });
+const downloadFile = (source, target) => axios.get(source, { responseType: 'arraybuffer' })
+  .then(({ data }) => fsp.writeFile(target, Buffer.from(data, 'binary')));
 
 const makeResourcesDir = (data) => fsp.mkdir(data.dir)
   .then(() => data);
