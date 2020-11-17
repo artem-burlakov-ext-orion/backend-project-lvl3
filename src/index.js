@@ -1,13 +1,13 @@
 import {
-  getPage,
-  getPageData,
+  loadPage,
+  generatePageData,
   makeResourcesDir,
   downloadResources,
-  downloadHtml,
+  savePage,
 } from './util.js';
 
-export default (url, output) => getPage(url, output)
-  .then((page) => getPageData(page, url, output))
+export default (url, output) => loadPage(url, output)
+  .then((page) => generatePageData(page, url, output))
   .then((data) => makeResourcesDir(data))
   .then((data) => downloadResources(data))
-  .then((html) => downloadHtml(html));
+  .then((html) => savePage(html));

@@ -18,40 +18,41 @@ const tags = {
   img: 'src',
 };
 
-const getConverted = (url) => {
-  const newUrl = url.endsWith('/') ? url.slice(0, -1) : url;
-  return newUrl.replace(/\W/g, NAMEFIX);
+const formatName = (data) => {
+  const name = data.endsWith('/') ? data.slice(0, -1) : data;
+  return name.replace(/\W/g, NAMEFIX);
 };
 
 const isInternal = (attrOrigin, urlOrigin) => attrOrigin === urlOrigin;
 
-const getDir = (data) => {
-  const dirName = getConverted(`${data.hostname}${data.pathname}`);
-  return `${dirName}${DIRFIX}`;
+const buildResourceDir = (data) => {
+  const name = formatName(`${data.hostname}${data.pathname}`);
+  return `${name}${DIRFIX}`;
 };
 
-const getResourceLocalPath = (urlData, attrData) => {
-  const dirName = getDir(urlData);
+const buildResourceLocalPath = (urlData, attrData) => {
+  const dirName = buildResourceDir(urlData);
   const parsed = parse(`${attrData.hostname}${attrData.pathname}`);
   const { base, dir, ext } = parsed;
-  const convertedFileName = `${getConverted(dir)}${NAMEFIX}${base}`;
-  const fileName = ext.includes('.') ? convertedFileName : `${convertedFileName}${HTMLFIX}`;
+  const formattedFileName = `${formatName(dir)}${NAMEFIX}${base}`;
+  const fileName = ext.includes('.') ? formattedFileName : `${formattedFileName}${HTMLFIX}`;
   return join(dirName, fileName);
 };
 
-const getHtmlLocalPath = (output, urlData) => {
-  const baseName = getConverted(`${urlData.hostname}${urlData.pathname}`);
-  const fixedBaseName = `${getConverted(baseName)}${HTMLFIX}`;
-  return join(output, fixedBaseName);
+const buildHtmlLocalPath = (output, urlData) => {
+  const baseData = formatName(`${urlData.hostname}${urlData.pathname}`);
+  const fixedBaseData = `${formatName(baseData)}${HTMLFIX}`;
+  return join(output, fixedBaseData);
 };
 
-const getPage = (url) => {
-  log(`Start parsing '${url}'`);
+const loadPage = (url) => {
+  log(`Load content from page '${url}'`);
   return axios.get(url)
     .then(({ data }) => cheerio.load(data, { decodeEntities: false }));
 };
 
-const getPageData = (dom, url, output) => {
+const generatePageData = (dom, url, output) => {
+  log(`Parse content from page ${url}`);
   const urlData = new URL(url);
   const resources = Object.entries(tags)
     .reduce((acc, [key, value]) => {
@@ -61,7 +62,7 @@ const getPageData = (dom, url, output) => {
         if (!isInternal(attrData.origin, urlData.origin)) {
           return elem;
         }
-        const localPath = getResourceLocalPath(urlData, attrData);
+        const localPath = buildResourceLocalPath(urlData, attrData);
         const source = attrData.href;
         const target = join(output, localPath);
         current.push({ source, target });
@@ -70,23 +71,25 @@ const getPageData = (dom, url, output) => {
       return [...acc, ...current];
     }, []);
   return {
-    dir: join(output, getDir(urlData)),
+    dir: join(output, buildResourceDir(urlData)),
     resources,
     html: {
       content: dom.html(),
-      target: getHtmlLocalPath(output, urlData),
+      target: buildHtmlLocalPath(output, urlData),
     },
   };
 };
 
-const downloadFile = (source, target) => axios.get(source, { responseType: 'arraybuffer' })
-  .then(({ data }) => fsp.writeFile(target, Buffer.from(data, 'binary')));
+const downloadFile = (source, target) => {
+  log(`Download from '${source}' to '${target}'`);
+  return axios.get(source, { responseType: 'arraybuffer' })
+    .then(({ data }) => fsp.writeFile(target, data, 'utf-8'));
+};
 
 const makeResourcesDir = (data) => fsp.mkdir(data.dir)
   .then(() => data);
 
 const downloadResources = (data) => {
-  log('Save resources');
   const tasks = data.resources.map(({ source, target }) => ({
     title: `Download from '${source}' to '${target}'`,
     task: () => downloadFile(source, target),
@@ -95,20 +98,22 @@ const downloadResources = (data) => {
     .then(() => data.html);
 };
 
-const downloadHtml = (html) => {
-  log('Save html');
+const savePage = (html) => {
   const tasks = [{
     title: `Save html content to '${html.target}'`,
-    task: () => fsp.writeFile(html.target, html.content),
+    task: () => {
+      log(`Save html content to '${html.target}'`);
+      return fsp.writeFile(html.target, html.content);
+    },
   }];
   return new Listr(tasks, { concurrent: true }).run()
     .then(() => html.target);
 };
 
 export {
-  getPage,
-  getPageData,
+  loadPage,
+  generatePageData,
   makeResourcesDir,
   downloadResources,
-  downloadHtml,
+  savePage,
 };
